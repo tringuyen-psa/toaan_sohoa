@@ -7,6 +7,7 @@ import { PeriodPicker } from "@/components/dashboard/period-picker";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { resolvePeriod } from "@/lib/period";
 import { userColor } from "@/lib/colors";
+import { getWorkdaysInRange } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -18,44 +19,51 @@ export default async function AdminReportsPage({
   await requireAdmin();
   const range = resolvePeriod(searchParams.period, searchParams.date, "month");
 
-  const entries = await prisma.productivityEntry.findMany({
-    where: { workDate: { gte: range.start, lte: range.end } },
-    include: {
-      user: { select: { id: true, name: true } },
-      docType: { select: { id: true, name: true } },
-    },
-  });
+  const [entries, workdays] = await Promise.all([
+    prisma.productivityEntry.findMany({
+      where: { workDate: { gte: range.start, lte: range.end } },
+      include: {
+        user: { select: { id: true, name: true } },
+        docType: { select: { id: true, name: true } },
+      },
+    }),
+    getWorkdaysInRange(range.start, range.end),
+  ]);
 
-  type Acc = { id: string; name: string; records: number; pages: number; uploaded: number; errors: number; hours: number };
+  const hoursByUser = new Map<string, number>();
+  for (const w of workdays) {
+    hoursByUser.set(w.userId, (hoursByUser.get(w.userId) ?? 0) + w.hours);
+  }
+  const totalHours = workdays.reduce((s, w) => s + w.hours, 0);
+
+  type Acc = { id: string; name: string; records: number; pages: number; uploaded: number; errors: number };
   const byUser = new Map<string, Acc>();
   const byDocType = new Map<string, Acc>();
 
   for (const e of entries) {
     const uk = e.user.id;
     if (!byUser.has(uk))
-      byUser.set(uk, { id: uk, name: e.user.name, records: 0, pages: 0, uploaded: 0, errors: 0, hours: 0 });
+      byUser.set(uk, { id: uk, name: e.user.name, records: 0, pages: 0, uploaded: 0, errors: 0 });
     addEntry(byUser.get(uk)!, e);
 
     const dk = e.docType.id;
     if (!byDocType.has(dk))
-      byDocType.set(dk, { id: dk, name: e.docType.name, records: 0, pages: 0, uploaded: 0, errors: 0, hours: 0 });
+      byDocType.set(dk, { id: dk, name: e.docType.name, records: 0, pages: 0, uploaded: 0, errors: 0 });
     addEntry(byDocType.get(dk)!, e);
   }
 
-  const userRows = Array.from(byUser.values()).sort((a, b) => b.pages - a.pages);
+  const userRows = Array.from(byUser.values())
+    .map((r) => ({ ...r, hours: hoursByUser.get(r.id) ?? 0 }))
+    .sort((a, b) => b.pages - a.pages);
   const docTypeRows = Array.from(byDocType.values()).sort((a, b) => b.pages - a.pages);
 
-  const totals = userRows.reduce(
-    (a, r) => {
-      a.records += r.records;
-      a.pages += r.pages;
-      a.uploaded += r.uploaded;
-      a.errors += r.errors;
-      a.hours += r.hours;
-      return a;
-    },
-    { records: 0, pages: 0, uploaded: 0, errors: 0, hours: 0 }
-  );
+  const totals = {
+    records: userRows.reduce((s, r) => s + r.records, 0),
+    pages: userRows.reduce((s, r) => s + r.pages, 0),
+    uploaded: userRows.reduce((s, r) => s + r.uploaded, 0),
+    errors: userRows.reduce((s, r) => s + r.errors, 0),
+    hours: totalHours,
+  };
 
   return (
     <div className="space-y-6">
@@ -81,7 +89,7 @@ export default async function AdminReportsPage({
           <CardTitle>Theo người ({range.label})</CardTitle>
         </CardHeader>
         <CardContent>
-          <SummaryTable rows={userRows} totals={totals} totalLabel={range.totalLabel} firstColumnLabel="Người thực hiện" colorize />
+          <UserSummaryTable rows={userRows} totals={totals} totalLabel={range.totalLabel} />
         </CardContent>
       </Card>
 
@@ -90,40 +98,35 @@ export default async function AdminReportsPage({
           <CardTitle>Theo loại hồ sơ ({range.label})</CardTitle>
         </CardHeader>
         <CardContent>
-          <SummaryTable rows={docTypeRows} totals={totals} totalLabel={range.totalLabel} firstColumnLabel="Loại hồ sơ" />
+          <DocTypeSummaryTable rows={docTypeRows} totals={totals} totalLabel={range.totalLabel} />
         </CardContent>
       </Card>
     </div>
   );
 }
 
-function addEntry(acc: { records: number; pages: number; uploaded: number; errors: number; hours: number }, e: { numRecords: number; numPages: number; numUploaded: number; numErrors: number; hours: number }) {
+function addEntry(acc: { records: number; pages: number; uploaded: number; errors: number }, e: { numRecords: number; numPages: number; numUploaded: number; numErrors: number }) {
   acc.records += e.numRecords;
   acc.pages += e.numPages;
   acc.uploaded += e.numUploaded;
   acc.errors += e.numErrors;
-  acc.hours += e.hours;
 }
 
-function SummaryTable({
+function UserSummaryTable({
   rows,
   totals,
   totalLabel,
-  firstColumnLabel,
-  colorize = false,
 }: {
   rows: { id: string; name: string; records: number; pages: number; uploaded: number; errors: number; hours: number }[];
   totals: { records: number; pages: number; uploaded: number; errors: number; hours: number };
   totalLabel: string;
-  firstColumnLabel: string;
-  colorize?: boolean;
 }) {
   return (
     <div className="overflow-x-auto">
       <table className="dashboard-table">
         <thead>
           <tr>
-            <th>{firstColumnLabel}</th>
+            <th>Người thực hiện</th>
             <th className="text-right">Số HS</th>
             <th className="text-right">Số trang</th>
             <th className="text-right">Upload</th>
@@ -141,26 +144,22 @@ function SummaryTable({
             </tr>
           ) : (
             rows.map((r) => {
-              const c = colorize ? userColor(r.id) : null;
+              const c = userColor(r.id);
               return (
-              <tr key={r.id} className={colorize ? "entry-row" : undefined}>
-                <td style={c ? { borderLeftColor: c.border } : undefined}>
-                  {c ? (
+                <tr key={r.id} className="entry-row">
+                  <td style={{ borderLeftColor: c.border }}>
                     <span className="inline-flex items-center gap-2">
                       <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ background: c.border }} />
                       <span style={{ color: c.text }} className="font-medium">{r.name}</span>
                     </span>
-                  ) : (
-                    <span className="font-medium">{r.name}</span>
-                  )}
-                </td>
-                <td className="text-right">{formatNumber(r.records)}</td>
-                <td className="text-right">{formatNumber(r.pages)}</td>
-                <td className="text-right">{formatNumber(r.uploaded)}</td>
-                <td className="text-right">{formatNumber(r.errors)}</td>
-                <td className="text-right">{formatNumber(r.hours, 1)}</td>
-                <td className="text-right">{formatNumber(pagesPerHour(r.pages, r.hours))}</td>
-              </tr>
+                  </td>
+                  <td className="text-right">{formatNumber(r.records)}</td>
+                  <td className="text-right">{formatNumber(r.pages)}</td>
+                  <td className="text-right">{formatNumber(r.uploaded)}</td>
+                  <td className="text-right">{formatNumber(r.errors)}</td>
+                  <td className="text-right">{formatNumber(r.hours, 1)}</td>
+                  <td className="text-right">{formatNumber(pagesPerHour(r.pages, r.hours))}</td>
+                </tr>
               );
             })
           )}
@@ -172,6 +171,58 @@ function SummaryTable({
             <td className="text-right">{formatNumber(totals.errors)}</td>
             <td className="text-right">{formatNumber(totals.hours, 1)}</td>
             <td className="text-right">{formatNumber(pagesPerHour(totals.pages, totals.hours))}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function DocTypeSummaryTable({
+  rows,
+  totals,
+  totalLabel,
+}: {
+  rows: { id: string; name: string; records: number; pages: number; uploaded: number; errors: number }[];
+  totals: { records: number; pages: number; uploaded: number; errors: number };
+  totalLabel: string;
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="dashboard-table">
+        <thead>
+          <tr>
+            <th>Loại hồ sơ</th>
+            <th className="text-right">Số HS</th>
+            <th className="text-right">Số trang</th>
+            <th className="text-right">Upload</th>
+            <th className="text-right">Lỗi</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td colSpan={5} className="text-center text-slate-400 italic py-4">
+                Không có dữ liệu
+              </td>
+            </tr>
+          ) : (
+            rows.map((r) => (
+              <tr key={r.id}>
+                <td className="font-medium">{r.name}</td>
+                <td className="text-right">{formatNumber(r.records)}</td>
+                <td className="text-right">{formatNumber(r.pages)}</td>
+                <td className="text-right">{formatNumber(r.uploaded)}</td>
+                <td className="text-right">{formatNumber(r.errors)}</td>
+              </tr>
+            ))
+          )}
+          <tr className="row-week-total">
+            <td>▲ {totalLabel}</td>
+            <td className="text-right">{formatNumber(totals.records)}</td>
+            <td className="text-right">{formatNumber(totals.pages)}</td>
+            <td className="text-right">{formatNumber(totals.uploaded)}</td>
+            <td className="text-right">{formatNumber(totals.errors)}</td>
           </tr>
         </tbody>
       </table>

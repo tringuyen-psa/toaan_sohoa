@@ -13,7 +13,7 @@ import { deleteEntry } from "./actions";
 import { EntryForm } from "./entry-form";
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { formatNumber, pagesPerHour } from "@/lib/utils";
+import { formatNumber } from "@/lib/utils";
 import { userColor } from "@/lib/colors";
 
 type DocType = { id: string; name: string };
@@ -28,7 +28,6 @@ type Row = {
   numPages: number;
   numUploaded: number;
   numErrors: number;
-  hours: number;
   status: "DONE" | "IN_PROGRESS" | "REVIEW";
   note: string | null;
 };
@@ -74,8 +73,6 @@ export function EntryRow({ row, docTypes, users }: { row: Row; docTypes: DocType
       <td className="text-right">{formatNumber(row.numPages)}</td>
       <td className="text-right">{formatNumber(row.numUploaded)}</td>
       <td className="text-right">{formatNumber(row.numErrors)}</td>
-      <td className="text-right">{formatNumber(row.hours, 1)}</td>
-      <td className="text-right">{formatNumber(pagesPerHour(row.numPages, row.hours))}</td>
       <td>{STATUS_LABEL[row.status]}</td>
       <td className="max-w-[160px] truncate">{row.note}</td>
       <td>
@@ -102,7 +99,6 @@ export function EntryRow({ row, docTypes, users }: { row: Row; docTypes: DocType
                   numPages: row.numPages,
                   numUploaded: row.numUploaded,
                   numErrors: row.numErrors,
-                  hours: row.hours,
                   status: row.status,
                   note: row.note,
                 }}

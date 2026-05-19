@@ -1,5 +1,5 @@
 import { resolvePeriod } from "@/lib/period";
-import { getEntriesInRange } from "@/lib/queries";
+import { getEntriesInRange, getWorkdaysInRange } from "@/lib/queries";
 import { PeriodPicker } from "@/components/dashboard/period-picker";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { WeeklyTable } from "@/components/dashboard/weekly-table";
@@ -18,7 +18,10 @@ export default async function DashboardPage({
   searchParams: { period?: string; date?: string };
 }) {
   const range = resolvePeriod(searchParams.period, searchParams.date, "week");
-  const entries = await getEntriesInRange(range.start, range.end);
+  const [entries, workdays] = await Promise.all([
+    getEntriesInRange(range.start, range.end),
+    getWorkdaysInRange(range.start, range.end),
+  ]);
 
   const totals = entries.reduce(
     (a, e) => {
@@ -26,11 +29,11 @@ export default async function DashboardPage({
       a.pages += e.numPages;
       a.uploaded += e.numUploaded;
       a.errors += e.numErrors;
-      a.hours += e.hours;
       return a;
     },
     { records: 0, pages: 0, uploaded: 0, errors: 0, hours: 0 }
   );
+  totals.hours = workdays.reduce((s, w) => s + w.hours, 0);
 
   const pagesByUser = new Map<string, { name: string; pages: number }>();
   for (const e of entries) {
@@ -83,7 +86,7 @@ export default async function DashboardPage({
         <DocTypePieChart data={docTypeData} />
       </div>
 
-      <WeeklyTable days={range.days} entries={entries} totalLabel={range.totalLabel} />
+      <WeeklyTable days={range.days} entries={entries} workdays={workdays} totalLabel={range.totalLabel} />
     </div>
   );
 }

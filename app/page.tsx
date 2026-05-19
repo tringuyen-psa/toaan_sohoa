@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EntryForm } from "./entries/entry-form";
 import { EntryRow } from "./entries/entry-row";
 import { UserPicker } from "./entries/user-picker";
+import { WorkdayWidget } from "./entries/workday-widget";
 
 export const dynamic = "force-dynamic";
 
@@ -18,17 +19,37 @@ export default async function HomePage({
     ? searchParams.user
     : undefined;
 
-  const entries = await prisma.productivityEntry.findMany({
-    where: selectedUserId ? { userId: selectedUserId } : {},
-    include: {
-      docType: { select: { id: true, name: true } },
-      user: { select: { id: true, name: true } },
-    },
-    orderBy: [{ workDate: "desc" }, { createdAt: "desc" }],
-    take: 100,
-  });
+  const today = new Date();
+  const todayKey = today.toISOString().slice(0, 10);
+  const todayStart = new Date(todayKey + "T00:00:00.000Z");
+  const todayEnd = new Date(todayKey + "T23:59:59.999Z");
+
+  const [entries, todayWorkday, todayPagesAgg] = await Promise.all([
+    prisma.productivityEntry.findMany({
+      where: selectedUserId ? { userId: selectedUserId } : {},
+      include: {
+        docType: { select: { id: true, name: true } },
+        user: { select: { id: true, name: true } },
+      },
+      orderBy: [{ workDate: "desc" }, { createdAt: "desc" }],
+      take: 100,
+    }),
+    selectedUserId
+      ? prisma.workday.findUnique({
+          where: { userId_workDate: { userId: selectedUserId, workDate: todayStart } },
+        })
+      : Promise.resolve(null),
+    selectedUserId
+      ? prisma.productivityEntry.aggregate({
+          _sum: { numPages: true },
+          where: { userId: selectedUserId, workDate: { gte: todayStart, lte: todayEnd } },
+        })
+      : Promise.resolve(null),
+  ]);
 
   const selectedUser = users.find((u) => u.id === selectedUserId);
+  const pagesToday = todayPagesAgg?._sum.numPages ?? 0;
+  const hoursToday = todayWorkday?.hours ?? 0;
 
   return (
     <div className="space-y-6">
@@ -37,12 +58,20 @@ export default async function HomePage({
           <h1 className="text-2xl font-bold text-[#1e3a8a]">Nhập liệu năng suất</h1>
           <p className="text-sm text-slate-600">
             {selectedUser
-              ? <>Đang nhập với tư cách <strong>{selectedUser.name}</strong>. Bấm sửa/xoá ngay trên bảng.</>
-              : <>Chọn người thực hiện trước khi nhập liệu, hoặc xem toàn bộ bản ghi gần đây.</>}
+              ? <>Đang nhập với tư cách <strong>{selectedUser.name}</strong>. Set giờ làm ngày 1 lần, rồi thêm các bộ hồ sơ phía dưới.</>
+              : <>Chọn người thực hiện ở góc phải để bắt đầu nhập.</>}
           </p>
         </div>
         <UserPicker users={users} currentId={selectedUserId} />
       </div>
+
+      <WorkdayWidget
+        users={users}
+        currentUserId={selectedUserId}
+        currentDate={todayKey}
+        currentHours={hoursToday}
+        pagesToday={pagesToday}
+      />
 
       <Card>
         <CardHeader>
@@ -76,8 +105,6 @@ export default async function HomePage({
                     <th className="text-right">Số trang</th>
                     <th className="text-right">Upload</th>
                     <th className="text-right">Lỗi</th>
-                    <th className="text-right">Giờ</th>
-                    <th className="text-right">Trang/giờ</th>
                     <th>Trạng thái</th>
                     <th>Ghi chú</th>
                     <th></th>

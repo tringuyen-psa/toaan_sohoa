@@ -13,6 +13,35 @@ export async function getEntriesInRange(start: Date, end: Date) {
   });
 }
 
+export async function getWorkdaysInRange(start: Date, end: Date) {
+  return prisma.workday.findMany({
+    where: { workDate: { gte: start, lte: end } },
+    include: { user: { select: { id: true, name: true } } },
+  });
+}
+
+export function sumWorkdayHours(workdays: { hours: number }[]): number {
+  return workdays.reduce((s, w) => s + w.hours, 0);
+}
+
+export function sumHoursOnDate(workdays: { workDate: Date; hours: number }[], day: Date): number {
+  const key = day.toDateString();
+  return workdays
+    .filter((w) => new Date(w.workDate).toDateString() === key)
+    .reduce((s, w) => s + w.hours, 0);
+}
+
+export function sumHoursForUserOnDate(
+  workdays: { userId: string; workDate: Date; hours: number }[],
+  userId: string,
+  day: Date
+): number {
+  const key = day.toDateString();
+  return workdays
+    .filter((w) => w.userId === userId && new Date(w.workDate).toDateString() === key)
+    .reduce((s, w) => s + w.hours, 0);
+}
+
 export async function getAllUsers() {
   return prisma.user.findMany({
     select: {

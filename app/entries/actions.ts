@@ -14,7 +14,6 @@ const EntrySchema = z.object({
   numPages: z.coerce.number().int().min(0),
   numUploaded: z.coerce.number().int().min(0),
   numErrors: z.coerce.number().int().min(0),
-  hours: z.coerce.number().min(0).max(24),
   status: z.nativeEnum(EntryStatus).default(EntryStatus.DONE),
   note: z.string().max(500).optional().nullable(),
 });
