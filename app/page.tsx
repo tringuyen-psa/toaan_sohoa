@@ -75,7 +75,7 @@ export default async function HomePage({
 
       <Card>
         <CardHeader>
-          <CardTitle>Thêm bản ghi mới</CardTitle>
+          <CardTitle>Thêm bản ghi số hóa mới</CardTitle>
         </CardHeader>
         <CardContent>
           <EntryForm docTypes={docTypes} users={users} defaultUserId={selectedUserId} />
