@@ -1,5 +1,6 @@
 import { EntryWithRel } from "@/lib/queries";
 import { formatNumber, pagesPerHour, vietnameseWeekdayLabel, formatDateVN, formatDateShort } from "@/lib/utils";
+import { userColor } from "@/lib/colors";
 
 type Props = {
   days: Date[];
@@ -86,9 +87,19 @@ function DayBlock({
           </td>
         </tr>
       ) : (
-        rows.map((r) => (
-          <tr key={r.id}>
-            <td>{r.user.name}</td>
+        rows.map((r) => {
+          const c = userColor(r.user.id);
+          return (
+          <tr key={r.id} className="entry-row">
+            <td style={{ borderLeftColor: c.border }}>
+              <span className="inline-flex items-center gap-2">
+                <span
+                  className="h-2.5 w-2.5 rounded-full shrink-0"
+                  style={{ background: c.border }}
+                />
+                <span style={{ color: c.text }} className="font-medium">{r.user.name}</span>
+              </span>
+            </td>
             <td>{r.docType.name}</td>
             <td className="text-right">{formatNumber(r.numRecords)}</td>
             <td className="text-right">{formatNumber(r.numPages)}</td>
@@ -99,7 +110,8 @@ function DayBlock({
             <td>{statusLabel(r.status)}</td>
             <td>{r.note ?? ""}</td>
           </tr>
-        ))
+          );
+        })
       )}
       <tr className="row-total">
         <td colSpan={2}>Tổng ngày {formatDateShort(day)}</td>

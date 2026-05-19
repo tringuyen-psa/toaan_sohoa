@@ -1,6 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { userColor } from "@/lib/colors";
 import {
   Bar,
   BarChart,
@@ -22,11 +23,15 @@ const PIE_COLORS = [
   "#8b5cf6", "#ec4899", "#14b8a6", "#f97316", "#6366f1", "#84cc16",
 ];
 
-export function PagesByUserChart({ data }: { data: { name: string; pages: number }[] }) {
+export function PagesByUserChart({
+  data,
+}: {
+  data: { name: string; pages: number; key?: string }[];
+}) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Số trang theo người (tuần này)</CardTitle>
+        <CardTitle className="text-base">Số trang theo người</CardTitle>
       </CardHeader>
       <CardContent className="h-72">
         <ResponsiveContainer width="100%" height="100%">
@@ -35,7 +40,11 @@ export function PagesByUserChart({ data }: { data: { name: string; pages: number
             <XAxis dataKey="name" fontSize={11} />
             <YAxis fontSize={11} />
             <Tooltip />
-            <Bar dataKey="pages" fill="#1e3a8a" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="pages" radius={[4, 4, 0, 0]}>
+              {data.map((d, i) => (
+                <Cell key={i} fill={userColor(d.key ?? d.name).border} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

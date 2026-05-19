@@ -44,15 +44,71 @@
 .dashboard-table thead th {
   @apply bg-[#1e3a8a] text-white font-semibold whitespace-nowrap;
 }
+.dashboard-table tbody tr.entry-row:hover {
+  @apply bg-slate-50;
+}
 .dashboard-table .row-total {
   @apply bg-amber-50 font-semibold;
+}
+.dashboard-table .row-total td {
+  border-top: 1.5px solid #f59e0b;
 }
 .dashboard-table .row-week-total {
   @apply bg-amber-100 font-bold text-[#1e3a8a];
 }
+.dashboard-table .row-week-total td {
+  border-top: 2px solid #1e3a8a;
+}
 .dashboard-table .day-header {
   @apply bg-blue-50 font-semibold text-[#1e3a8a];
 }
+.dashboard-table .day-header td {
+  border-top: 2px solid #1e3a8a;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
 .dashboard-table .week-header {
   @apply bg-blue-100 font-bold text-[#1e3a8a] text-center;
+}
+.dashboard-table .entry-row td:first-child {
+  border-left-width: 4px;
+}
+
+.action-bar {
+  display: inline-flex;
+  align-items: stretch;
+  background: white;
+  border: 1px solid hsl(var(--border));
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+.action-bar > * {
+  border-left: 1px solid hsl(var(--border));
+  border-radius: 0 !important;
+  height: 32px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  background: white;
+  color: rgb(51 65 85);
+  transition: background-color 120ms;
+  white-space: nowrap;
+}
+.action-bar > *:first-child {
+  border-left: none;
+}
+.action-bar > *:hover:not(:disabled) {
+  background: rgb(248 250 252);
+}
+.action-bar > *:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.action-bar > .danger:hover:not(:disabled) {
+  background: rgb(254 242 242);
+  color: rgb(190 18 60);
 }

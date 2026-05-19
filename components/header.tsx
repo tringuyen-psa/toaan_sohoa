@@ -26,8 +26,8 @@ type NavItem = {
 };
 
 const NAV: NavItem[] = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/entries", label: "Nhập liệu", icon: FileText },
+  { href: "/", label: "Nhập liệu", icon: FileText },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/users", label: "Người dùng", icon: Users, adminOnly: true },
   { href: "/admin/document-types", label: "Loại hồ sơ", icon: FolderTree, adminOnly: true },
   { href: "/admin/reports", label: "Báo cáo", icon: BarChart3, adminOnly: true },

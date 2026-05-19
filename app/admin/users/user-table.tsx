@@ -12,6 +12,7 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { toggleActive, resetPassword, updateRole, updateUser, deleteUser } from "./actions";
 import { toast } from "sonner";
 import { Role } from "@prisma/client";
@@ -28,24 +29,6 @@ type U = {
 };
 
 export function UserTable({ users }: { users: U[] }) {
-  const [pending, start] = useTransition();
-
-  function onToggle(u: U) {
-    start(async () => {
-      const r = await toggleActive(u.id);
-      if (r.ok) toast.success(u.active ? "Đã khoá" : "Đã kích hoạt");
-    });
-  }
-
-  function onRole(u: U, role: Role) {
-    if (u.role === role) return;
-    if (!confirm(`Đổi quyền của ${u.name} thành ${role}?`)) return;
-    start(async () => {
-      await updateRole(u.id, role);
-      toast.success("Đã đổi quyền");
-    });
-  }
-
   return (
     <div className="overflow-x-auto">
       <table className="dashboard-table">
@@ -57,60 +40,108 @@ export function UserTable({ users }: { users: U[] }) {
             <th>Quyền</th>
             <th>Trạng thái</th>
             <th>Ngày tạo</th>
-            <th></th>
+            <th>Thao tác</th>
           </tr>
         </thead>
         <tbody>
           {users.map((u) => (
-            <tr key={u.id}>
-              <td className="font-medium">{u.name}</td>
-              <td><code className="text-xs">{u.username}</code></td>
-              <td><PasswordCell value={u.passwordPlain} /></td>
-              <td>
-                <select
-                  value={u.role}
-                  onChange={(e) => onRole(u, e.target.value as Role)}
-                  disabled={pending}
-                  className="h-7 rounded border border-input bg-background px-2 text-xs"
-                >
-                  <option value="USER">USER</option>
-                  <option value="ADMIN">ADMIN</option>
-                </select>
-              </td>
-              <td>
-                {u.active ? (
-                  <Badge variant="success">Hoạt động</Badge>
-                ) : (
-                  <Badge variant="destructive">Khoá</Badge>
-                )}
-              </td>
-              <td className="text-xs text-slate-500">
-                {new Date(u.createdAt).toLocaleDateString("vi-VN")}
-              </td>
-              <td>
-                <div className="flex gap-1 flex-wrap">
-                  <EditUserButton user={u} />
-                  <ResetPasswordButton userId={u.id} name={u.name} />
-                  <Button
-                    size="sm"
-                    variant={u.active ? "destructive" : "default"}
-                    onClick={() => onToggle(u)}
-                    disabled={pending}
-                  >
-                    {u.active ? (
-                      <><ShieldOff className="h-4 w-4 mr-1" /> Khoá</>
-                    ) : (
-                      <><ShieldCheck className="h-4 w-4 mr-1" /> Bật</>
-                    )}
-                  </Button>
-                  <DeleteUserButton user={u} />
-                </div>
-              </td>
-            </tr>
+            <UserRow key={u.id} user={u} />
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+function UserRow({ user: u }: { user: U }) {
+  const [pending, start] = useTransition();
+
+  function onToggle() {
+    start(async () => {
+      const r = await toggleActive(u.id);
+      if (r.ok) toast.success(u.active ? "Đã khoá" : "Đã kích hoạt");
+    });
+  }
+
+  function onRoleChange(role: Role) {
+    if (u.role === role) return;
+    start(async () => {
+      await updateRole(u.id, role);
+      toast.success("Đã đổi quyền");
+    });
+  }
+
+  function onDelete() {
+    start(async () => {
+      const r = await deleteUser(u.id);
+      if (r.ok) toast.success(r.message ?? "Đã xoá");
+      else toast.error(r.message ?? "Lỗi");
+    });
+  }
+
+  return (
+    <tr>
+      <td className="font-medium">{u.name}</td>
+      <td><code className="text-xs">{u.username}</code></td>
+      <td><PasswordCell value={u.passwordPlain} /></td>
+      <td>
+        <ConfirmDialog
+          title="Đổi quyền user?"
+          description={<>Đổi quyền của <strong>{u.name}</strong> từ <code>{u.role}</code> sang <code>{u.role === "ADMIN" ? "USER" : "ADMIN"}</code>.</>}
+          variant="default"
+          confirmLabel="Đổi quyền"
+          onConfirm={() => onRoleChange(u.role === "ADMIN" ? "USER" : "ADMIN")}
+          trigger={
+            <button className="h-7 rounded border border-input bg-background px-2 text-xs font-medium hover:bg-slate-50">
+              {u.role}
+            </button>
+          }
+        />
+      </td>
+      <td>
+        {u.active
+          ? <Badge variant="success">Hoạt động</Badge>
+          : <Badge variant="destructive">Khoá</Badge>}
+      </td>
+      <td className="text-xs text-slate-500 whitespace-nowrap">
+        {new Date(u.createdAt).toLocaleDateString("vi-VN")}
+      </td>
+      <td>
+        <div className="action-bar">
+          <EditUserButton user={u} />
+          <ResetPasswordButton userId={u.id} name={u.name} />
+          <ConfirmDialog
+            title={u.active ? "Khoá tài khoản?" : "Kích hoạt tài khoản?"}
+            description={
+              u.active
+                ? <>User <strong>{u.name}</strong> sẽ không đăng nhập được cho đến khi được kích hoạt lại.</>
+                : <>User <strong>{u.name}</strong> sẽ đăng nhập lại được.</>
+            }
+            variant={u.active ? "destructive" : "default"}
+            confirmLabel={u.active ? "Khoá" : "Kích hoạt"}
+            onConfirm={onToggle}
+            trigger={
+              <button disabled={pending} type="button">
+                {u.active
+                  ? <><ShieldOff className="h-3.5 w-3.5" /> Khoá</>
+                  : <><ShieldCheck className="h-3.5 w-3.5" /> Bật</>}
+              </button>
+            }
+          />
+          <ConfirmDialog
+            title="Xoá user?"
+            description={<>Xoá user <strong>{u.name}</strong> ({u.username}). Chỉ xoá được nếu user chưa có bản ghi nào — nếu có sẵn bản ghi, hãy khoá thay vì xoá.</>}
+            confirmLabel="Xoá"
+            onConfirm={onDelete}
+            trigger={
+              <button className="danger" disabled={pending} type="button">
+                <Trash2 className="h-3.5 w-3.5 text-rose-600" /> Xoá
+              </button>
+            }
+          />
+        </div>
+      </td>
+    </tr>
   );
 }
 
@@ -175,9 +206,9 @@ function EditUserButton({ user }: { user: U }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          <Pencil className="h-4 w-4 mr-1" /> Sửa
-        </Button>
+        <button type="button">
+          <Pencil className="h-3.5 w-3.5" /> Sửa
+        </button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -199,23 +230,6 @@ function EditUserButton({ user }: { user: U }) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
-}
-
-function DeleteUserButton({ user }: { user: U }) {
-  const [pending, start] = useTransition();
-  function onDelete() {
-    if (!confirm(`Xoá user "${user.name}"? (chỉ xoá được nếu chưa có bản ghi nào)`)) return;
-    start(async () => {
-      const r = await deleteUser(user.id);
-      if (r.ok) toast.success(r.message ?? "Đã xoá");
-      else toast.error(r.message ?? "Lỗi");
-    });
-  }
-  return (
-    <Button size="sm" variant="ghost" onClick={onDelete} disabled={pending} title="Xoá">
-      <Trash2 className="h-4 w-4 text-rose-600" />
-    </Button>
   );
 }
 
@@ -244,9 +258,9 @@ function ResetPasswordButton({ userId, name }: { userId: string; name: string })
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          <KeyRound className="h-4 w-4 mr-1" /> MK
-        </Button>
+        <button type="button">
+          <KeyRound className="h-3.5 w-3.5" /> MK
+        </button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

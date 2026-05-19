@@ -15,6 +15,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { saveDocType, toggleDocTypeActive, deleteDocType, type ActionState } from "./actions";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 const INIT: ActionState = { ok: false };
 import { Pencil, Trash2, Power } from "lucide-react";
@@ -94,7 +95,6 @@ function DocTypeRow({ d }: { d: DT }) {
   }
 
   function onDelete() {
-    if (!confirm(`Xoá "${d.name}"?`)) return;
     start(async () => {
       const r = await deleteDocType(d.id);
       if (r.ok) toast.success("Đã xoá");
@@ -110,12 +110,12 @@ function DocTypeRow({ d }: { d: DT }) {
         {d.active ? <Badge variant="success">Hiện</Badge> : <Badge variant="secondary">Ẩn</Badge>}
       </td>
       <td>
-        <div className="flex gap-1">
+        <div className="action-bar">
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button size="icon" variant="ghost">
-                <Pencil className="h-4 w-4" />
-              </Button>
+              <button type="button">
+                <Pencil className="h-3.5 w-3.5" /> Sửa
+              </button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -124,12 +124,33 @@ function DocTypeRow({ d }: { d: DT }) {
               <DocTypeForm initial={d} onSaved={() => setOpen(false)} />
             </DialogContent>
           </Dialog>
-          <Button size="icon" variant="ghost" onClick={onToggle} disabled={pending} title={d.active ? "Ẩn" : "Hiện"}>
-            <Power className="h-4 w-4" />
-          </Button>
-          <Button size="icon" variant="ghost" onClick={onDelete} disabled={pending} title="Xoá">
-            <Trash2 className="h-4 w-4 text-rose-600" />
-          </Button>
+          <ConfirmDialog
+            title={d.active ? "Ẩn loại hồ sơ?" : "Hiện loại hồ sơ?"}
+            description={
+              d.active
+                ? <>Sau khi ẩn, <strong>{d.name}</strong> sẽ không xuất hiện trong dropdown nhập liệu. Các bản ghi cũ vẫn còn.</>
+                : <>Cho phép sử dụng lại loại hồ sơ <strong>{d.name}</strong> trong form nhập liệu.</>
+            }
+            variant={d.active ? "destructive" : "default"}
+            confirmLabel={d.active ? "Ẩn" : "Hiện"}
+            onConfirm={onToggle}
+            trigger={
+              <button disabled={pending} type="button" title={d.active ? "Ẩn" : "Hiện"}>
+                <Power className="h-3.5 w-3.5" /> {d.active ? "Ẩn" : "Hiện"}
+              </button>
+            }
+          />
+          <ConfirmDialog
+            title="Xoá loại hồ sơ?"
+            description={<>Xoá <strong>{d.name}</strong>. Chỉ xoá được nếu chưa có bản ghi nào dùng đến — nếu đã có, hãy ẩn thay vì xoá.</>}
+            confirmLabel="Xoá"
+            onConfirm={onDelete}
+            trigger={
+              <button className="danger" disabled={pending} type="button">
+                <Trash2 className="h-3.5 w-3.5 text-rose-600" /> Xoá
+              </button>
+            }
+          />
         </div>
       </td>
     </tr>

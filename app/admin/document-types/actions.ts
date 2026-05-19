@@ -31,7 +31,7 @@ export async function saveDocType(_: ActionState, formData: FormData): Promise<A
     throw e;
   }
   revalidatePath("/admin/document-types");
-  revalidatePath("/entries");
+  revalidatePath("/");
   return { ok: true, message: id ? "Đã cập nhật" : "Đã thêm" };
 }
 

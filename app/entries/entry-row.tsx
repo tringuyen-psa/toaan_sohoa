@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,11 +8,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { deleteEntry } from "./actions";
 import { EntryForm } from "./entry-form";
 import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatNumber, pagesPerHour } from "@/lib/utils";
+import { userColor } from "@/lib/colors";
 
 type DocType = { id: string; name: string };
 type UserOpt = { id: string; name: string };
@@ -46,7 +47,6 @@ export function EntryRow({ row, docTypes, users }: { row: Row; docTypes: DocType
   const isoDate = date.toISOString().slice(0, 10);
 
   function onDelete() {
-    if (!confirm("Xoá bản ghi này?")) return;
     start(async () => {
       const res = await deleteEntry(row.id);
       if (res.ok) toast.success("Đã xoá");
@@ -54,10 +54,21 @@ export function EntryRow({ row, docTypes, users }: { row: Row; docTypes: DocType
     });
   }
 
+  const c = row.user ? userColor(row.user.id) : null;
   return (
-    <tr>
-      <td>{dateStr}</td>
-      <td className="font-medium">{row.user?.name ?? "—"}</td>
+    <tr className="entry-row">
+      <td style={c ? { borderLeftColor: c.border } : undefined}>{dateStr}</td>
+      <td>
+        {row.user ? (
+          <span className="inline-flex items-center gap-2">
+            <span
+              className="h-2.5 w-2.5 rounded-full shrink-0"
+              style={{ background: c!.border }}
+            />
+            <span style={{ color: c!.text }} className="font-medium">{row.user.name}</span>
+          </span>
+        ) : "—"}
+      </td>
       <td>{row.docType.name}</td>
       <td className="text-right">{formatNumber(row.numRecords)}</td>
       <td className="text-right">{formatNumber(row.numPages)}</td>
@@ -68,12 +79,12 @@ export function EntryRow({ row, docTypes, users }: { row: Row; docTypes: DocType
       <td>{STATUS_LABEL[row.status]}</td>
       <td className="max-w-[160px] truncate">{row.note}</td>
       <td>
-        <div className="flex gap-1">
+        <div className="action-bar">
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button size="icon" variant="ghost" title="Sửa">
-                <Pencil className="h-4 w-4" />
-              </Button>
+              <button type="button">
+                <Pencil className="h-3.5 w-3.5" /> Sửa
+              </button>
             </DialogTrigger>
             <DialogContent className="max-w-3xl">
               <DialogHeader>
@@ -99,9 +110,23 @@ export function EntryRow({ row, docTypes, users }: { row: Row; docTypes: DocType
               />
             </DialogContent>
           </Dialog>
-          <Button size="icon" variant="ghost" title="Xoá" onClick={onDelete} disabled={pending}>
-            <Trash2 className="h-4 w-4 text-rose-600" />
-          </Button>
+          <ConfirmDialog
+            title="Xoá bản ghi?"
+            description={
+              <>
+                Xoá bản ghi <strong>{row.docType.name}</strong> ngày {dateStr}
+                {row.user && <> của <strong>{row.user.name}</strong></>}.
+                Hành động này không hoàn tác được.
+              </>
+            }
+            confirmLabel="Xoá"
+            onConfirm={onDelete}
+            trigger={
+              <button className="danger" disabled={pending} type="button">
+                <Trash2 className="h-3.5 w-3.5 text-rose-600" /> Xoá
+              </button>
+            }
+          />
         </div>
       </td>
     </tr>

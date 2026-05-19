@@ -59,8 +59,8 @@ export async function saveEntry(_: EntryFormState, formData: FormData): Promise<
     await prisma.productivityEntry.create({ data });
   }
 
-  revalidatePath("/entries");
   revalidatePath("/");
+  revalidatePath("/dashboard");
   revalidatePath("/admin/reports");
   return { ok: true, message: id ? "Đã cập nhật" : "Đã thêm bản ghi" };
 }
@@ -69,8 +69,8 @@ export async function deleteEntry(id: string) {
   const existing = await prisma.productivityEntry.findUnique({ where: { id } });
   if (!existing) return { ok: false, message: "Không tìm thấy" };
   await prisma.productivityEntry.delete({ where: { id } });
-  revalidatePath("/entries");
   revalidatePath("/");
+  revalidatePath("/dashboard");
   revalidatePath("/admin/reports");
   return { ok: true };
 }
