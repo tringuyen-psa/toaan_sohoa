@@ -15,6 +15,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatNumber } from "@/lib/utils";
 import { userColor } from "@/lib/colors";
+import { StatusBadge } from "@/components/status-badge";
 
 type DocType = { id: string; name: string };
 type UserOpt = { id: string; name: string };
@@ -30,12 +31,6 @@ type Row = {
   numErrors: number;
   status: "DONE" | "IN_PROGRESS" | "REVIEW";
   note: string | null;
-};
-
-const STATUS_LABEL: Record<Row["status"], string> = {
-  DONE: "Hoàn thành",
-  IN_PROGRESS: "Đang làm",
-  REVIEW: "Kiểm tra",
 };
 
 type WorkdayLite = { userId: string; workDate: Date | string; hours: number };
@@ -75,7 +70,7 @@ export function EntryRow({ row, docTypes, users, workdays = [] }: { row: Row; do
       <td className="text-center">{formatNumber(row.numPages)}</td>
       <td className="text-center">{formatNumber(row.numUploaded)}</td>
       <td className="text-center">{formatNumber(row.numErrors)}</td>
-      <td>{STATUS_LABEL[row.status]}</td>
+      <td><StatusBadge status={row.status} /></td>
       <td className="max-w-[160px] truncate">{row.note}</td>
       <td>
         <div className="action-bar">

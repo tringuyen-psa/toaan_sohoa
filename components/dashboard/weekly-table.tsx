@@ -1,6 +1,7 @@
 import { EntryWithRel } from "@/lib/queries";
 import { formatNumber, vietnameseWeekdayLabel, formatDateVN, formatDateShort } from "@/lib/utils";
 import { userColor } from "@/lib/colors";
+import { StatusBadge } from "@/components/status-badge";
 
 type Workday = { userId: string; workDate: Date; hours: number };
 
@@ -10,13 +11,6 @@ type Props = {
   workdays: Workday[];
   totalLabel: string;
 };
-
-function statusLabel(s: string) {
-  if (s === "DONE") return "Hoàn thành";
-  if (s === "IN_PROGRESS") return "Đang làm";
-  if (s === "REVIEW") return "Kiểm tra";
-  return s;
-}
 
 const COL_COUNT = 9;
 
@@ -151,7 +145,7 @@ function DayBlock({
                     )}
                   </td>
                 )}
-                <td>{statusLabel(r.status)}</td>
+                <td><StatusBadge status={r.status} /></td>
                 <td>{r.note ?? ""}</td>
               </tr>
             );
