@@ -73,11 +73,13 @@ export default async function HomePage({
         pagesToday={pagesToday}
       />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Thêm bản ghi số hóa mới</CardTitle>
+      <Card className="border-2 border-[#1e3a8a]/20 shadow-md ring-1 ring-[#1e3a8a]/5">
+        <CardHeader className="bg-gradient-to-r from-[#1e3a8a]/10 via-blue-500/5 to-transparent border-b">
+          <CardTitle className="text-lg font-bold text-[#1e3a8a] uppercase tracking-wide">
+            Thêm bản ghi số hóa mới
+          </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-5">
           <EntryForm docTypes={docTypes} users={users} defaultUserId={selectedUserId} />
         </CardContent>
       </Card>
