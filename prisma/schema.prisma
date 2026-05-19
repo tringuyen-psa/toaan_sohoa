@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum EntryStatus {
+  IN_PROGRESS
+  DONE
+  REVIEW
+}
+
+model User {
+  id            String              @id @default(cuid())
+  username      String              @unique
+  name          String
+  passwordHash  String
+  passwordPlain String?
+  role          Role                @default(USER)
+  active        Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  entries       ProductivityEntry[]
+
+  @@index([active])
+}
+
+model DocumentType {
+  id        String              @id @default(cuid())
+  name      String              @unique
+  note      String?
+  active    Boolean             @default(true)
+  createdAt DateTime            @default(now())
+  entries   ProductivityEntry[]
+
+  @@index([active])
+}
+
+model ProductivityEntry {
+  id           String       @id @default(cuid())
+  userId       String
+  docTypeId    String
+  workDate     DateTime     @db.Date
+  numRecords   Int          @default(0)
+  numPages     Int          @default(0)
+  numUploaded  Int          @default(0)
+  numErrors    Int          @default(0)
+  hours        Float        @default(0)
+  status       EntryStatus  @default(DONE)
+  note         String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  user    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  docType DocumentType @relation(fields: [docTypeId], references: [id])
+
+  @@index([workDate])
+  @@index([userId, workDate])
+  @@index([docTypeId])
+}

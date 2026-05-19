@@ -1,0 +1,269 @@
+"use client";
+
+import { useTransition, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { toggleActive, resetPassword, updateRole, updateUser, deleteUser } from "./actions";
+import { toast } from "sonner";
+import { Role } from "@prisma/client";
+import { KeyRound, ShieldCheck, ShieldOff, Pencil, Trash2, Eye, EyeOff, Copy } from "lucide-react";
+
+type U = {
+  id: string;
+  username: string;
+  name: string;
+  role: Role;
+  active: boolean;
+  passwordPlain: string | null;
+  createdAt: Date;
+};
+
+export function UserTable({ users }: { users: U[] }) {
+  const [pending, start] = useTransition();
+
+  function onToggle(u: U) {
+    start(async () => {
+      const r = await toggleActive(u.id);
+      if (r.ok) toast.success(u.active ? "Đã khoá" : "Đã kích hoạt");
+    });
+  }
+
+  function onRole(u: U, role: Role) {
+    if (u.role === role) return;
+    if (!confirm(`Đổi quyền của ${u.name} thành ${role}?`)) return;
+    start(async () => {
+      await updateRole(u.id, role);
+      toast.success("Đã đổi quyền");
+    });
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="dashboard-table">
+        <thead>
+          <tr>
+            <th>Họ tên</th>
+            <th>Tên đăng nhập</th>
+            <th>Mật khẩu</th>
+            <th>Quyền</th>
+            <th>Trạng thái</th>
+            <th>Ngày tạo</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map((u) => (
+            <tr key={u.id}>
+              <td className="font-medium">{u.name}</td>
+              <td><code className="text-xs">{u.username}</code></td>
+              <td><PasswordCell value={u.passwordPlain} /></td>
+              <td>
+                <select
+                  value={u.role}
+                  onChange={(e) => onRole(u, e.target.value as Role)}
+                  disabled={pending}
+                  className="h-7 rounded border border-input bg-background px-2 text-xs"
+                >
+                  <option value="USER">USER</option>
+                  <option value="ADMIN">ADMIN</option>
+                </select>
+              </td>
+              <td>
+                {u.active ? (
+                  <Badge variant="success">Hoạt động</Badge>
+                ) : (
+                  <Badge variant="destructive">Khoá</Badge>
+                )}
+              </td>
+              <td className="text-xs text-slate-500">
+                {new Date(u.createdAt).toLocaleDateString("vi-VN")}
+              </td>
+              <td>
+                <div className="flex gap-1 flex-wrap">
+                  <EditUserButton user={u} />
+                  <ResetPasswordButton userId={u.id} name={u.name} />
+                  <Button
+                    size="sm"
+                    variant={u.active ? "destructive" : "default"}
+                    onClick={() => onToggle(u)}
+                    disabled={pending}
+                  >
+                    {u.active ? (
+                      <><ShieldOff className="h-4 w-4 mr-1" /> Khoá</>
+                    ) : (
+                      <><ShieldCheck className="h-4 w-4 mr-1" /> Bật</>
+                    )}
+                  </Button>
+                  <DeleteUserButton user={u} />
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function PasswordCell({ value }: { value: string | null }) {
+  const [shown, setShown] = useState(false);
+  if (!value) return <span className="text-xs text-slate-400 italic">không lưu</span>;
+
+  function copy() {
+    navigator.clipboard.writeText(value!).then(
+      () => toast.success("Đã copy"),
+      () => toast.error("Không copy được")
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <code className="text-xs px-1.5 py-0.5 bg-slate-100 rounded min-w-[80px] inline-block">
+        {shown ? value : "••••••••"}
+      </code>
+      <button
+        type="button"
+        onClick={() => setShown((s) => !s)}
+        className="text-slate-500 hover:text-slate-900"
+        title={shown ? "Ẩn" : "Hiện"}
+      >
+        {shown ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+      </button>
+      <button
+        type="button"
+        onClick={copy}
+        className="text-slate-500 hover:text-slate-900"
+        title="Copy"
+      >
+        <Copy className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+function EditUserButton({ user }: { user: U }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(user.name);
+  const [username, setUsername] = useState(user.username);
+  const [pending, start] = useTransition();
+
+  function submit() {
+    if (name.trim().length === 0) {
+      toast.error("Họ tên không được trống");
+      return;
+    }
+    start(async () => {
+      const r = await updateUser(user.id, { name: name.trim(), username: username.trim() });
+      if (r.ok) {
+        toast.success(r.message ?? "Đã cập nhật");
+        setOpen(false);
+      } else {
+        toast.error(r.message ?? "Lỗi");
+      }
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <Pencil className="h-4 w-4 mr-1" /> Sửa
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Sửa thông tin user</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <label className="text-xs font-medium">Họ tên</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium">Tên đăng nhập</label>
+            <Input value={username} onChange={(e) => setUsername(e.target.value)} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>Huỷ</Button>
+          <Button onClick={submit} disabled={pending}>Lưu</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteUserButton({ user }: { user: U }) {
+  const [pending, start] = useTransition();
+  function onDelete() {
+    if (!confirm(`Xoá user "${user.name}"? (chỉ xoá được nếu chưa có bản ghi nào)`)) return;
+    start(async () => {
+      const r = await deleteUser(user.id);
+      if (r.ok) toast.success(r.message ?? "Đã xoá");
+      else toast.error(r.message ?? "Lỗi");
+    });
+  }
+  return (
+    <Button size="sm" variant="ghost" onClick={onDelete} disabled={pending} title="Xoá">
+      <Trash2 className="h-4 w-4 text-rose-600" />
+    </Button>
+  );
+}
+
+function ResetPasswordButton({ userId, name }: { userId: string; name: string }) {
+  const [open, setOpen] = useState(false);
+  const [pwd, setPwd] = useState("");
+  const [pending, start] = useTransition();
+
+  function submit() {
+    if (pwd.length < 6) {
+      toast.error("Tối thiểu 6 ký tự");
+      return;
+    }
+    start(async () => {
+      const r = await resetPassword(userId, pwd);
+      if (r.ok) {
+        toast.success("Đã đổi mật khẩu");
+        setOpen(false);
+        setPwd("");
+      } else {
+        toast.error(r.message ?? "Lỗi");
+      }
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline">
+          <KeyRound className="h-4 w-4 mr-1" /> MK
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Đặt lại mật khẩu cho {name}</DialogTitle>
+        </DialogHeader>
+        <Input
+          type="text"
+          placeholder="Mật khẩu mới (≥ 6 ký tự)"
+          value={pwd}
+          onChange={(e) => setPwd(e.target.value)}
+          autoFocus
+        />
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => setOpen(false)}>Huỷ</Button>
+          <Button onClick={submit} disabled={pending}>Lưu</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
