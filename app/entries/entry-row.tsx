@@ -38,7 +38,9 @@ const STATUS_LABEL: Record<Row["status"], string> = {
   REVIEW: "Kiểm tra",
 };
 
-export function EntryRow({ row, docTypes, users }: { row: Row; docTypes: DocType[]; users: UserOpt[] }) {
+type WorkdayLite = { userId: string; workDate: Date | string; hours: number };
+
+export function EntryRow({ row, docTypes, users, workdays = [] }: { row: Row; docTypes: DocType[]; users: UserOpt[]; workdays?: WorkdayLite[] }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const date = new Date(row.workDate);
@@ -69,10 +71,10 @@ export function EntryRow({ row, docTypes, users }: { row: Row; docTypes: DocType
         ) : "—"}
       </td>
       <td>{row.docType.name}</td>
-      <td className="text-right">{formatNumber(row.numRecords)}</td>
-      <td className="text-right">{formatNumber(row.numPages)}</td>
-      <td className="text-right">{formatNumber(row.numUploaded)}</td>
-      <td className="text-right">{formatNumber(row.numErrors)}</td>
+      <td className="text-center">{formatNumber(row.numRecords)}</td>
+      <td className="text-center">{formatNumber(row.numPages)}</td>
+      <td className="text-center">{formatNumber(row.numUploaded)}</td>
+      <td className="text-center">{formatNumber(row.numErrors)}</td>
       <td>{STATUS_LABEL[row.status]}</td>
       <td className="max-w-[160px] truncate">{row.note}</td>
       <td>
@@ -90,6 +92,7 @@ export function EntryRow({ row, docTypes, users }: { row: Row; docTypes: DocType
               <EntryForm
                 docTypes={docTypes}
                 users={users}
+                workdays={workdays}
                 initial={{
                   id: row.id,
                   userId: row.userId,

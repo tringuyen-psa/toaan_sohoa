@@ -39,7 +39,7 @@
 }
 .dashboard-table th,
 .dashboard-table td {
-  @apply border border-slate-200 px-3 py-2 text-left align-top;
+  @apply border border-slate-200 px-3 py-2 align-top;
 }
 .dashboard-table thead th {
   @apply bg-[#1e3a8a] text-white font-semibold whitespace-nowrap;

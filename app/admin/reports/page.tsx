@@ -1,7 +1,7 @@
 import { requireAdmin } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatNumber, pagesPerHour } from "@/lib/utils";
+import { formatNumber } from "@/lib/utils";
 import { PagesByUserChart, DocTypePieChart } from "@/components/dashboard/charts";
 import { PeriodPicker } from "@/components/dashboard/period-picker";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
@@ -127,18 +127,17 @@ function UserSummaryTable({
         <thead>
           <tr>
             <th>Người thực hiện</th>
-            <th className="text-right">Số HS</th>
-            <th className="text-right">Số trang</th>
-            <th className="text-right">Upload</th>
-            <th className="text-right">Lỗi</th>
-            <th className="text-right">Giờ</th>
-            <th className="text-right">Trang/giờ</th>
+            <th className="text-center">Số HS</th>
+            <th className="text-center">Số trang</th>
+            <th className="text-center">Upload</th>
+            <th className="text-center">Lỗi</th>
+            <th className="text-center">Số giờ làm trong ngày</th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={7} className="text-center text-slate-400 italic py-4">
+              <td colSpan={6} className="text-center text-slate-400 italic py-4">
                 Không có dữ liệu
               </td>
             </tr>
@@ -153,24 +152,22 @@ function UserSummaryTable({
                       <span style={{ color: c.text }} className="font-medium">{r.name}</span>
                     </span>
                   </td>
-                  <td className="text-right">{formatNumber(r.records)}</td>
-                  <td className="text-right">{formatNumber(r.pages)}</td>
-                  <td className="text-right">{formatNumber(r.uploaded)}</td>
-                  <td className="text-right">{formatNumber(r.errors)}</td>
-                  <td className="text-right">{formatNumber(r.hours, 1)}</td>
-                  <td className="text-right">{formatNumber(pagesPerHour(r.pages, r.hours))}</td>
+                  <td className="text-center">{formatNumber(r.records)}</td>
+                  <td className="text-center">{formatNumber(r.pages)}</td>
+                  <td className="text-center">{formatNumber(r.uploaded)}</td>
+                  <td className="text-center">{formatNumber(r.errors)}</td>
+                  <td className="text-center">{formatNumber(r.hours, 1)}</td>
                 </tr>
               );
             })
           )}
           <tr className="row-week-total">
             <td>▲ {totalLabel}</td>
-            <td className="text-right">{formatNumber(totals.records)}</td>
-            <td className="text-right">{formatNumber(totals.pages)}</td>
-            <td className="text-right">{formatNumber(totals.uploaded)}</td>
-            <td className="text-right">{formatNumber(totals.errors)}</td>
-            <td className="text-right">{formatNumber(totals.hours, 1)}</td>
-            <td className="text-right">{formatNumber(pagesPerHour(totals.pages, totals.hours))}</td>
+            <td className="text-center">{formatNumber(totals.records)}</td>
+            <td className="text-center">{formatNumber(totals.pages)}</td>
+            <td className="text-center">{formatNumber(totals.uploaded)}</td>
+            <td className="text-center">{formatNumber(totals.errors)}</td>
+            <td className="text-center">{formatNumber(totals.hours, 1)}</td>
           </tr>
         </tbody>
       </table>
@@ -193,10 +190,10 @@ function DocTypeSummaryTable({
         <thead>
           <tr>
             <th>Loại hồ sơ</th>
-            <th className="text-right">Số HS</th>
-            <th className="text-right">Số trang</th>
-            <th className="text-right">Upload</th>
-            <th className="text-right">Lỗi</th>
+            <th className="text-center">Số HS</th>
+            <th className="text-center">Số trang</th>
+            <th className="text-center">Upload</th>
+            <th className="text-center">Lỗi</th>
           </tr>
         </thead>
         <tbody>
@@ -210,19 +207,19 @@ function DocTypeSummaryTable({
             rows.map((r) => (
               <tr key={r.id}>
                 <td className="font-medium">{r.name}</td>
-                <td className="text-right">{formatNumber(r.records)}</td>
-                <td className="text-right">{formatNumber(r.pages)}</td>
-                <td className="text-right">{formatNumber(r.uploaded)}</td>
-                <td className="text-right">{formatNumber(r.errors)}</td>
+                <td className="text-center">{formatNumber(r.records)}</td>
+                <td className="text-center">{formatNumber(r.pages)}</td>
+                <td className="text-center">{formatNumber(r.uploaded)}</td>
+                <td className="text-center">{formatNumber(r.errors)}</td>
               </tr>
             ))
           )}
           <tr className="row-week-total">
             <td>▲ {totalLabel}</td>
-            <td className="text-right">{formatNumber(totals.records)}</td>
-            <td className="text-right">{formatNumber(totals.pages)}</td>
-            <td className="text-right">{formatNumber(totals.uploaded)}</td>
-            <td className="text-right">{formatNumber(totals.errors)}</td>
+            <td className="text-center">{formatNumber(totals.records)}</td>
+            <td className="text-center">{formatNumber(totals.pages)}</td>
+            <td className="text-center">{formatNumber(totals.uploaded)}</td>
+            <td className="text-center">{formatNumber(totals.errors)}</td>
           </tr>
         </tbody>
       </table>

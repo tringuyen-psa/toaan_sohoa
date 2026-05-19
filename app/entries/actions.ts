@@ -16,6 +16,11 @@ const EntrySchema = z.object({
   numErrors: z.coerce.number().int().min(0),
   status: z.nativeEnum(EntryStatus).default(EntryStatus.DONE),
   note: z.string().max(500).optional().nullable(),
+  workdayHours: z
+    .union([z.string(), z.number()])
+    .optional()
+    .transform((v) => (v === undefined || v === "" ? undefined : Number(v)))
+    .refine((v) => v === undefined || (v >= 0 && v <= 24), "Giờ làm phải trong khoảng 0–24"),
 });
 
 export type EntryFormState = {
@@ -36,17 +41,18 @@ export async function saveEntry(_: EntryFormState, formData: FormData): Promise<
       ),
     };
   }
-  const { id, workDate, note, userId, ...rest } = parsed.data;
+  const { id, workDate, note, userId, workdayHours, ...rest } = parsed.data;
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user || !user.active) {
     return { ok: false, message: "Người thực hiện không hợp lệ hoặc đã bị khoá" };
   }
 
+  const workDateObj = new Date(workDate + "T00:00:00.000Z");
   const data = {
     ...rest,
     userId,
-    workDate: new Date(workDate + "T00:00:00.000Z"),
+    workDate: workDateObj,
     note: note?.trim() || null,
   };
 
@@ -56,6 +62,14 @@ export async function saveEntry(_: EntryFormState, formData: FormData): Promise<
     await prisma.productivityEntry.update({ where: { id }, data });
   } else {
     await prisma.productivityEntry.create({ data });
+  }
+
+  if (workdayHours !== undefined) {
+    await prisma.workday.upsert({
+      where: { userId_workDate: { userId, workDate: workDateObj } },
+      update: { hours: workdayHours },
+      create: { userId, workDate: workDateObj, hours: workdayHours },
+    });
   }
 
   revalidatePath("/");
