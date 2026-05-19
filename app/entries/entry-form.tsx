@@ -3,16 +3,16 @@
 import { useFormState, useFormStatus } from "react-dom";
 import { useEffect, useRef } from "react";
 import { saveEntry, type EntryFormState } from "./actions";
-
-const INIT_STATE: EntryFormState = { ok: false };
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 type DocType = { id: string; name: string };
+type UserOpt = { id: string; name: string };
 type InitialEntry = {
   id: string;
+  userId: string;
   docTypeId: string;
   workDate: string;
   numRecords: number;
@@ -23,6 +23,8 @@ type InitialEntry = {
   status: "DONE" | "IN_PROGRESS" | "REVIEW";
   note: string | null;
 };
+
+const INIT_STATE: EntryFormState = { ok: false };
 
 function SubmitBtn({ editing }: { editing: boolean }) {
   const { pending } = useFormStatus();
@@ -35,10 +37,14 @@ function SubmitBtn({ editing }: { editing: boolean }) {
 
 export function EntryForm({
   docTypes,
+  users,
+  defaultUserId,
   initial,
   onSaved,
 }: {
   docTypes: DocType[];
+  users: UserOpt[];
+  defaultUserId?: string;
   initial?: InitialEntry;
   onSaved?: () => void;
 }) {
@@ -56,10 +62,24 @@ export function EntryForm({
   }, [state, initial, onSaved]);
 
   const today = new Date().toISOString().slice(0, 10);
+  const currentUser = initial?.userId ?? defaultUserId ?? "";
 
   return (
     <form ref={formRef} action={formAction} className="grid grid-cols-1 md:grid-cols-3 gap-3">
       {initial && <input type="hidden" name="id" value={initial.id} />}
+      <Field label="Người thực hiện" error={state.errors?.userId}>
+        <select
+          name="userId"
+          defaultValue={currentUser}
+          required
+          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+        >
+          <option value="" disabled>— chọn —</option>
+          {users.map((u) => (
+            <option key={u.id} value={u.id}>{u.name}</option>
+          ))}
+        </select>
+      </Field>
       <Field label="Ngày" error={state.errors?.workDate}>
         <Input type="date" name="workDate" defaultValue={initial?.workDate ?? today} required />
       </Field>
@@ -76,17 +96,6 @@ export function EntryForm({
           ))}
         </select>
       </Field>
-      <Field label="Trạng thái">
-        <select
-          name="status"
-          defaultValue={initial?.status ?? "DONE"}
-          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
-        >
-          <option value="DONE">Hoàn thành</option>
-          <option value="IN_PROGRESS">Đang làm</option>
-          <option value="REVIEW">Kiểm tra</option>
-        </select>
-      </Field>
       <Field label="Số HS" error={state.errors?.numRecords}>
         <Input type="number" min={0} name="numRecords" defaultValue={initial?.numRecords ?? 0} required />
       </Field>
@@ -101,6 +110,17 @@ export function EntryForm({
       </Field>
       <Field label="Giờ" error={state.errors?.hours}>
         <Input type="number" min={0} max={24} step={0.5} name="hours" defaultValue={initial?.hours ?? 0.5} required />
+      </Field>
+      <Field label="Trạng thái">
+        <select
+          name="status"
+          defaultValue={initial?.status ?? "DONE"}
+          className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+        >
+          <option value="DONE">Hoàn thành</option>
+          <option value="IN_PROGRESS">Đang làm</option>
+          <option value="REVIEW">Kiểm tra</option>
+        </select>
       </Field>
       <Field label="Ghi chú" className="md:col-span-3">
         <Input name="note" defaultValue={initial?.note ?? ""} placeholder="Tuỳ chọn" />

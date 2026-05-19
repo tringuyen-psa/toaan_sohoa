@@ -1,25 +1,47 @@
-import { requireUser } from "@/lib/rbac";
-import { getActiveDocTypes, getMyEntries } from "@/lib/queries";
+import { prisma } from "@/lib/prisma";
+import { getActiveDocTypes, getActiveUsers } from "@/lib/queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EntryForm } from "./entry-form";
 import { EntryRow } from "./entry-row";
+import { UserPicker } from "./user-picker";
 
 export const dynamic = "force-dynamic";
 
-export default async function EntriesPage() {
-  const session = await requireUser();
-  const [docTypes, entries] = await Promise.all([
-    getActiveDocTypes(),
-    getMyEntries(session.user.id, 200),
-  ]);
+export default async function EntriesPage({
+  searchParams,
+}: {
+  searchParams: { user?: string };
+}) {
+  const [docTypes, users] = await Promise.all([getActiveDocTypes(), getActiveUsers()]);
+
+  const selectedUserId = searchParams.user && users.some((u) => u.id === searchParams.user)
+    ? searchParams.user
+    : undefined;
+
+  const entries = await prisma.productivityEntry.findMany({
+    where: selectedUserId ? { userId: selectedUserId } : {},
+    include: {
+      docType: { select: { id: true, name: true } },
+      user: { select: { id: true, name: true } },
+    },
+    orderBy: [{ workDate: "desc" }, { createdAt: "desc" }],
+    take: 100,
+  });
+
+  const selectedUser = users.find((u) => u.id === selectedUserId);
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[#1e3a8a]">Nhập liệu năng suất</h1>
-        <p className="text-sm text-slate-600">
-          Xin chào, <strong>{session.user.name}</strong>. Bạn chỉ có thể chỉnh sửa/xoá bản ghi của chính mình.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1e3a8a]">Nhập liệu năng suất</h1>
+          <p className="text-sm text-slate-600">
+            {selectedUser
+              ? <>Đang nhập với tư cách <strong>{selectedUser.name}</strong>. Bấm sửa/xoá ngay trên bảng.</>
+              : <>Chọn người thực hiện trước khi nhập liệu, hoặc xem toàn bộ bản ghi gần đây.</>}
+          </p>
+        </div>
+        <UserPicker users={users} currentId={selectedUserId} />
       </div>
 
       <Card>
@@ -27,13 +49,17 @@ export default async function EntriesPage() {
           <CardTitle>Thêm bản ghi mới</CardTitle>
         </CardHeader>
         <CardContent>
-          <EntryForm docTypes={docTypes} />
+          <EntryForm docTypes={docTypes} users={users} defaultUserId={selectedUserId} />
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Bản ghi gần đây của tôi ({entries.length})</CardTitle>
+          <CardTitle>
+            {selectedUser
+              ? `Bản ghi của ${selectedUser.name} (${entries.length})`
+              : `Bản ghi gần đây — toàn bộ (${entries.length})`}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {entries.length === 0 ? (
@@ -44,6 +70,7 @@ export default async function EntriesPage() {
                 <thead>
                   <tr>
                     <th>Ngày</th>
+                    <th>Người</th>
                     <th>Loại hồ sơ</th>
                     <th className="text-right">Số HS</th>
                     <th className="text-right">Số trang</th>
@@ -58,7 +85,7 @@ export default async function EntriesPage() {
                 </thead>
                 <tbody>
                   {entries.map((row) => (
-                    <EntryRow key={row.id} row={row} docTypes={docTypes} />
+                    <EntryRow key={row.id} row={row} docTypes={docTypes} users={users} />
                   ))}
                 </tbody>
               </table>

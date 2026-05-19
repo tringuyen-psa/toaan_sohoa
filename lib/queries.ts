@@ -46,11 +46,3 @@ export async function getActiveDocTypes() {
   });
 }
 
-export async function getMyEntries(userId: string, limit = 100) {
-  return prisma.productivityEntry.findMany({
-    where: { userId },
-    include: { docType: { select: { id: true, name: true } } },
-    orderBy: [{ workDate: "desc" }, { createdAt: "desc" }],
-    take: limit,
-  });
-}

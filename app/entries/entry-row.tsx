@@ -16,10 +16,13 @@ import { toast } from "sonner";
 import { formatNumber, pagesPerHour } from "@/lib/utils";
 
 type DocType = { id: string; name: string };
+type UserOpt = { id: string; name: string };
 type Row = {
   id: string;
+  userId: string;
   workDate: Date;
   docType: { id: string; name: string };
+  user?: { id: string; name: string };
   numRecords: number;
   numPages: number;
   numUploaded: number;
@@ -35,7 +38,7 @@ const STATUS_LABEL: Record<Row["status"], string> = {
   REVIEW: "Kiểm tra",
 };
 
-export function EntryRow({ row, docTypes }: { row: Row; docTypes: DocType[] }) {
+export function EntryRow({ row, docTypes, users }: { row: Row; docTypes: DocType[]; users: UserOpt[] }) {
   const [open, setOpen] = useState(false);
   const [pending, start] = useTransition();
   const date = new Date(row.workDate);
@@ -54,6 +57,7 @@ export function EntryRow({ row, docTypes }: { row: Row; docTypes: DocType[] }) {
   return (
     <tr>
       <td>{dateStr}</td>
+      <td className="font-medium">{row.user?.name ?? "—"}</td>
       <td>{row.docType.name}</td>
       <td className="text-right">{formatNumber(row.numRecords)}</td>
       <td className="text-right">{formatNumber(row.numPages)}</td>
@@ -77,8 +81,10 @@ export function EntryRow({ row, docTypes }: { row: Row; docTypes: DocType[] }) {
               </DialogHeader>
               <EntryForm
                 docTypes={docTypes}
+                users={users}
                 initial={{
                   id: row.id,
+                  userId: row.userId,
                   docTypeId: row.docType.id,
                   workDate: isoDate,
                   numRecords: row.numRecords,

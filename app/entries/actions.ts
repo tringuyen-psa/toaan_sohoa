@@ -3,11 +3,11 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/rbac";
 import { EntryStatus } from "@prisma/client";
 
 const EntrySchema = z.object({
   id: z.string().optional(),
+  userId: z.string().min(1, "Chọn người thực hiện"),
   docTypeId: z.string().min(1, "Chọn loại hồ sơ"),
   workDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Ngày không hợp lệ"),
   numRecords: z.coerce.number().int().min(0),
@@ -26,7 +26,6 @@ export type EntryFormState = {
 };
 
 export async function saveEntry(_: EntryFormState, formData: FormData): Promise<EntryFormState> {
-  const session = await requireUser();
   const raw = Object.fromEntries(formData.entries());
   const parsed = EntrySchema.safeParse(raw);
   if (!parsed.success) {
@@ -38,9 +37,16 @@ export async function saveEntry(_: EntryFormState, formData: FormData): Promise<
       ),
     };
   }
-  const { id, workDate, note, ...rest } = parsed.data;
+  const { id, workDate, note, userId, ...rest } = parsed.data;
+
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user || !user.active) {
+    return { ok: false, message: "Người thực hiện không hợp lệ hoặc đã bị khoá" };
+  }
+
   const data = {
     ...rest,
+    userId,
     workDate: new Date(workDate + "T00:00:00.000Z"),
     note: note?.trim() || null,
   };
@@ -48,12 +54,9 @@ export async function saveEntry(_: EntryFormState, formData: FormData): Promise<
   if (id) {
     const existing = await prisma.productivityEntry.findUnique({ where: { id } });
     if (!existing) return { ok: false, message: "Không tìm thấy bản ghi" };
-    if (existing.userId !== session.user.id && session.user.role !== "ADMIN") {
-      return { ok: false, message: "Không có quyền chỉnh sửa bản ghi này" };
-    }
     await prisma.productivityEntry.update({ where: { id }, data });
   } else {
-    await prisma.productivityEntry.create({ data: { ...data, userId: session.user.id } });
+    await prisma.productivityEntry.create({ data });
   }
 
   revalidatePath("/entries");
@@ -63,12 +66,8 @@ export async function saveEntry(_: EntryFormState, formData: FormData): Promise<
 }
 
 export async function deleteEntry(id: string) {
-  const session = await requireUser();
   const existing = await prisma.productivityEntry.findUnique({ where: { id } });
   if (!existing) return { ok: false, message: "Không tìm thấy" };
-  if (existing.userId !== session.user.id && session.user.role !== "ADMIN") {
-    return { ok: false, message: "Không có quyền xoá" };
-  }
   await prisma.productivityEntry.delete({ where: { id } });
   revalidatePath("/entries");
   revalidatePath("/");
