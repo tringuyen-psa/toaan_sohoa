@@ -118,15 +118,20 @@ function DayBlock({
             const c = userColor(r.user.id);
             return (
               <tr key={r.id} className="entry-row">
-                <td style={{ borderLeftColor: c.border }}>
-                  <span className="inline-flex items-center gap-2">
-                    <span
-                      className="h-2.5 w-2.5 rounded-full shrink-0"
-                      style={{ background: c.border }}
-                    />
-                    <span style={{ color: c.text }} className="font-medium">{r.user.name}</span>
-                  </span>
-                </td>
+                {idx === 0 && (
+                  <td
+                    rowSpan={group.rows.length}
+                    style={{ borderLeftColor: c.border, verticalAlign: "middle" }}
+                  >
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full shrink-0"
+                        style={{ background: c.border }}
+                      />
+                      <span style={{ color: c.text }} className="font-medium">{r.user.name}</span>
+                    </span>
+                  </td>
+                )}
                 <td>{r.docType.name}</td>
                 <td className="text-center">{formatNumber(r.numRecords)}</td>
                 <td className="text-center">{formatNumber(r.numPages)}</td>
