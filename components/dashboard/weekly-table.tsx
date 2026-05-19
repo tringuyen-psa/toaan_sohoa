@@ -51,7 +51,7 @@ export function WeeklyTable({ days, entries, workdays, totalLabel }: Props) {
             <th>Người thực hiện</th>
             <th>Loại hồ sơ</th>
             <th className="text-center">Số HS</th>
-            <th className="text-center">Số trang</th>
+            <th className="text-center">Số trang đã scan</th>
             <th className="text-center">Upload</th>
             <th className="text-center">Lỗi</th>
             <th className="text-center">Số giờ làm trong ngày</th>
@@ -141,7 +141,8 @@ function DayBlock({
                 {idx === 0 && (
                   <td
                     rowSpan={group.rows.length}
-                    className="text-center align-middle font-semibold bg-slate-50"
+                    className="text-center font-semibold bg-slate-50"
+                    style={{ verticalAlign: "middle" }}
                   >
                     {userHours !== undefined ? (
                       formatNumber(userHours, 1)

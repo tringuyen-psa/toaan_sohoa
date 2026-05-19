@@ -96,7 +96,7 @@ export default async function HomePage({
                     <th>Người</th>
                     <th>Loại hồ sơ</th>
                     <th className="text-center">Số HS</th>
-                    <th className="text-center">Số trang</th>
+                    <th className="text-center">Số trang đã scan</th>
                     <th className="text-center">Số trang đã upload</th>
                     <th className="text-center">Lỗi</th>
                     <th>Trạng thái</th>

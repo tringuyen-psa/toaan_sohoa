@@ -128,7 +128,7 @@ function UserSummaryTable({
           <tr>
             <th>Người thực hiện</th>
             <th className="text-center">Số HS</th>
-            <th className="text-center">Số trang</th>
+            <th className="text-center">Số trang đã scan</th>
             <th className="text-center">Upload</th>
             <th className="text-center">Lỗi</th>
             <th className="text-center">Số giờ làm trong ngày</th>
@@ -191,7 +191,7 @@ function DocTypeSummaryTable({
           <tr>
             <th>Loại hồ sơ</th>
             <th className="text-center">Số HS</th>
-            <th className="text-center">Số trang</th>
+            <th className="text-center">Số trang đã scan</th>
             <th className="text-center">Upload</th>
             <th className="text-center">Lỗi</th>
           </tr>

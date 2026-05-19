@@ -16,7 +16,7 @@ export function KpiCards({ totals }: Props) {
   const avg = pagesPerHour(totals.pages, totals.hours);
   const items = [
     { label: "Tổng số HS", value: formatNumber(totals.records), icon: Files, tint: "text-blue-600" },
-    { label: "Tổng số trang", value: formatNumber(totals.pages), icon: FileText, tint: "text-emerald-600" },
+    { label: "Tổng số trang đã scan", value: formatNumber(totals.pages), icon: FileText, tint: "text-emerald-600" },
     { label: "Đã upload", value: formatNumber(totals.uploaded), icon: Upload, tint: "text-violet-600" },
     { label: "Lỗi", value: formatNumber(totals.errors), icon: AlertTriangle, tint: "text-rose-600" },
     { label: "Tổng giờ", value: formatNumber(totals.hours, 1), icon: Clock, tint: "text-amber-600" },

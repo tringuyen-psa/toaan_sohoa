@@ -166,7 +166,7 @@ export function EntryForm({
         <Input type="number" min={0} name="numRecords" defaultValue={initial?.numRecords ?? 0} required />
       </Field>
 
-      <Field label="Số trang" error={state.errors?.numPages}>
+      <Field label="Số trang đã scan" error={state.errors?.numPages}>
         <Input type="number" min={0} name="numPages" defaultValue={initial?.numPages ?? 0} required />
       </Field>
 

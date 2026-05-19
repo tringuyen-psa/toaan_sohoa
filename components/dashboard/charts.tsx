@@ -31,7 +31,7 @@ export function PagesByUserChart({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-base">Số trang theo người</CardTitle>
+        <CardTitle className="text-base">Số trang đã scan theo người</CardTitle>
       </CardHeader>
       <CardContent className="h-72">
         <ResponsiveContainer width="100%" height="100%">
@@ -66,7 +66,7 @@ export function PagesByDayChart({ data }: { data: { day: string; pages: number; 
             <YAxis fontSize={11} />
             <Tooltip />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Line type="monotone" dataKey="pages" name="Số trang" stroke="#1e3a8a" strokeWidth={2} />
+            <Line type="monotone" dataKey="pages" name="Số trang đã scan" stroke="#1e3a8a" strokeWidth={2} />
             <Line type="monotone" dataKey="records" name="Số HS" stroke="#10b981" strokeWidth={2} />
           </LineChart>
         </ResponsiveContainer>
