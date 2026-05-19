@@ -4,7 +4,7 @@ import { formatNumber, pagesPerHour, vietnameseWeekdayLabel, formatDateVN, forma
 type Props = {
   days: Date[];
   entries: EntryWithRel[];
-  weekNumber: number;
+  totalLabel: string;
 };
 
 function statusLabel(s: string) {
@@ -14,7 +14,7 @@ function statusLabel(s: string) {
   return s;
 }
 
-export function WeeklyTable({ days, entries, weekNumber }: Props) {
+export function WeeklyTable({ days, entries, totalLabel }: Props) {
   const byDay = new Map<string, EntryWithRel[]>();
   for (const d of days) byDay.set(d.toDateString(), []);
   for (const e of entries) {
@@ -48,7 +48,7 @@ export function WeeklyTable({ days, entries, weekNumber }: Props) {
             return <DayBlock key={d.toISOString()} day={d} rows={rows} tot={tot} />;
           })}
           <tr className="row-week-total">
-            <td colSpan={2} className="text-center">▲ TỔNG TUẦN {weekNumber}</td>
+            <td colSpan={2} className="text-center">▲ {totalLabel}</td>
             <td className="text-right">{formatNumber(weekTot.records)}</td>
             <td className="text-right">{formatNumber(weekTot.pages)}</td>
             <td className="text-right">{formatNumber(weekTot.uploaded)}</td>

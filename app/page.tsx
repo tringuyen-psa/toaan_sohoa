@@ -1,6 +1,6 @@
-import { getWeekRange } from "@/lib/week";
+import { resolvePeriod } from "@/lib/period";
 import { getEntriesInRange } from "@/lib/queries";
-import { WeekPicker } from "@/components/dashboard/week-picker";
+import { PeriodPicker } from "@/components/dashboard/period-picker";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { WeeklyTable } from "@/components/dashboard/weekly-table";
 import {
@@ -15,12 +15,10 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { week?: string };
+  searchParams: { period?: string; date?: string };
 }) {
-  const { start, end, weekNumber, days } = getWeekRange(searchParams.week);
-  const endInclusive = new Date(end);
-  endInclusive.setHours(23, 59, 59, 999);
-  const entries = await getEntriesInRange(start, endInclusive);
+  const range = resolvePeriod(searchParams.period, searchParams.date, "week");
+  const entries = await getEntriesInRange(range.start, range.end);
 
   const totals = entries.reduce(
     (a, e) => {
@@ -42,7 +40,7 @@ export default async function DashboardPage({
     .map(([name, pages]) => ({ name, pages }))
     .sort((a, b) => b.pages - a.pages);
 
-  const pagesByDayData = days.map((d) => {
+  const pagesByDayData = range.days.map((d) => {
     const dayEntries = entries.filter(
       (e) => new Date(e.workDate).toDateString() === d.toDateString()
     );
@@ -61,16 +59,16 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[#1e3a8a]">
             Dashboard năng suất số hóa
           </h1>
           <p className="text-sm text-slate-600">
-            Theo dõi sản lượng số hồ sơ, số trang và năng suất theo tuần
+            {range.label} • Theo dõi sản lượng số hồ sơ, số trang và năng suất
           </p>
         </div>
-        <WeekPicker start={start} end={end} weekNumber={weekNumber} />
+        <PeriodPicker range={range} />
       </div>
 
       <KpiCards totals={totals} />
@@ -81,7 +79,7 @@ export default async function DashboardPage({
         <DocTypePieChart data={docTypeData} />
       </div>
 
-      <WeeklyTable days={days} entries={entries} weekNumber={weekNumber} />
+      <WeeklyTable days={range.days} entries={entries} totalLabel={range.totalLabel} />
     </div>
   );
 }

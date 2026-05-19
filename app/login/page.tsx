@@ -79,9 +79,9 @@ function LoginForm() {
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               Đăng nhập
             </Button>
-            <p className="text-xs text-muted-foreground text-center">
+            {/* <p className="text-xs text-muted-foreground text-center">
               Demo: <code>admin / admin123</code>
-            </p>
+            </p> */}
           </form>
         </CardContent>
       </Card>
