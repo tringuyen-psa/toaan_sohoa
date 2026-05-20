@@ -15,6 +15,7 @@ import {
   LayoutDashboard,
   Menu,
   X,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,7 @@ const NAV: NavItem[] = [
   { href: "/admin/users", label: "Người dùng", icon: Users, adminOnly: true },
   { href: "/admin/document-types", label: "Loại hồ sơ", icon: FolderTree, adminOnly: true },
   { href: "/admin/reports", label: "Báo cáo", icon: BarChart3, adminOnly: true },
+  { href: "/admin/export", label: "Xuất Excel", icon: Download, adminOnly: true },
 ];
 
 export function Header() {
