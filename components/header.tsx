@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   Download,
+  PackageCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +32,7 @@ const NAV: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/users", label: "Người dùng", icon: Users, adminOnly: true },
   { href: "/admin/document-types", label: "Loại hồ sơ", icon: FolderTree, adminOnly: true },
+  { href: "/admin/handovers", label: "Bàn giao", icon: PackageCheck, adminOnly: true },
   { href: "/admin/reports", label: "Báo cáo", icon: BarChart3, adminOnly: true },
   { href: "/admin/export", label: "Xuất Excel", icon: Download, adminOnly: true },
 ];

@@ -18,6 +18,11 @@ enum EntryStatus {
   REVIEW
 }
 
+enum DaySession {
+  MORNING
+  AFTERNOON
+}
+
 model User {
   id            String              @id @default(cuid())
   username      String              @unique
@@ -49,14 +54,46 @@ model Workday {
 }
 
 model DocumentType {
-  id        String              @id @default(cuid())
-  name      String              @unique
-  note      String?
-  active    Boolean             @default(true)
-  createdAt DateTime            @default(now())
-  entries   ProductivityEntry[]
+  id            String              @id @default(cuid())
+  name          String              @unique
+  note          String?
+  active        Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  entries       ProductivityEntry[]
+  handoverItems HandoverItem[]
 
   @@index([active])
+}
+
+model Handover {
+  id                String      @id @default(cuid())
+  category          String
+  recordDate        DateTime    @db.Date
+  receivedAt        DateTime
+  receivedSession   DaySession?
+  handedOverAt      DateTime
+  handedOverSession DaySession?
+  note              String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  items HandoverItem[]
+
+  @@index([recordDate])
+  @@index([handedOverAt])
+}
+
+model HandoverItem {
+  id         String @id @default(cuid())
+  handoverId String
+  docTypeId  String
+  quantity   Int    @default(1)
+
+  handover Handover     @relation(fields: [handoverId], references: [id], onDelete: Cascade)
+  docType  DocumentType @relation(fields: [docTypeId], references: [id])
+
+  @@index([handoverId])
+  @@index([docTypeId])
 }
 
 model ProductivityEntry {
