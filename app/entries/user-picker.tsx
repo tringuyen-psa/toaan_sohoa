@@ -15,7 +15,7 @@ export function UserPicker({ users, currentId }: { users: U[]; currentId?: strin
     if (id) params.set("user", id);
     else params.delete("user");
     const qs = params.toString();
-    router.push(qs ? `${pathname}?${qs}` : pathname);
+    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
 
   return (

@@ -4,19 +4,30 @@ import { getActiveDocTypes } from "@/lib/queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HandoverForm } from "./handover-form";
 import { HandoverRow } from "./handover-row";
+import { resolvePeriod } from "@/lib/period";
+import { PeriodPicker } from "@/components/dashboard/period-picker";
+import { ShowAllToggle } from "./show-all-toggle";
 
 export const dynamic = "force-dynamic";
 
-export default async function HandoversPage() {
+export default async function HandoversPage({
+  searchParams,
+}: {
+  searchParams: { period?: string; date?: string; all?: string };
+}) {
   await requireAdmin();
+  const showAll = searchParams.all === "1";
+  const range = resolvePeriod(searchParams.period, searchParams.date, "month");
+
   const [docTypes, rows] = await Promise.all([
     getActiveDocTypes(),
     prisma.handover.findMany({
+      where: showAll ? {} : { recordDate: { gte: range.start, lte: range.end } },
       include: {
         items: { include: { docType: { select: { id: true, name: true } } } },
       },
       orderBy: [{ recordDate: "desc" }, { createdAt: "desc" }],
-      take: 200,
+      take: 500,
     }),
   ]);
 
@@ -41,12 +52,20 @@ export default async function HandoversPage() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Danh sách bàn giao ({rows.length})</CardTitle>
+        <CardHeader className="flex flex-row items-start justify-between gap-3 flex-wrap">
+          <CardTitle>
+            {showAll
+              ? `Tất cả bàn giao (${rows.length})`
+              : `Bàn giao theo hồ sơ ngày · ${range.label} (${rows.length})`}
+          </CardTitle>
+          <div className="flex flex-col items-end gap-2">
+            <ShowAllToggle showAll={showAll} />
+            {!showAll && <PeriodPicker range={range} />}
+          </div>
         </CardHeader>
         <CardContent>
           {rows.length === 0 ? (
-            <p className="text-sm text-slate-500 italic">Chưa có bản ghi nào.</p>
+            <p className="text-sm text-slate-500 italic">Không có bản ghi nào trong khoảng này.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="dashboard-table">

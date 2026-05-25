@@ -24,13 +24,13 @@ export function PeriodPicker({ range }: { range: PeriodRange }) {
 
   function setPeriod(p: Period) {
     if (p === range.period) return;
-    router.push(build({ period: p, date: format(new Date(), "yyyy-MM-dd") }));
+    router.push(build({ period: p, date: format(new Date(), "yyyy-MM-dd") }), { scroll: false });
   }
   function go(target: string) {
-    router.push(build({ period: range.period, date: target }));
+    router.push(build({ period: range.period, date: target }), { scroll: false });
   }
   function today() {
-    router.push(build({ period: range.period, date: undefined }));
+    router.push(build({ period: range.period, date: undefined }), { scroll: false });
   }
 
   const onChangeDate = (value: string) => value && go(value);
