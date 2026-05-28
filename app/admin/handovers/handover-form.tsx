@@ -248,24 +248,56 @@ function TimeSection({
       </div>
       <div className="space-y-1.5">
         <Label className="text-sm font-bold text-slate-900">Giờ cụ thể (nếu có)</Label>
-        <div className="flex gap-1">
-          <Input
-            type="time"
-            value={time}
-            onChange={(e) => onTimeChange(e.target.value)}
-          />
-          {usingTime && (
-            <button
-              type="button"
-              onClick={() => onTimeChange("")}
-              className="shrink-0 text-xs px-2 rounded-md border hover:bg-slate-50"
-              title="Xoá giờ, quay lại Sáng/Chiều"
-            >
-              Xoá
-            </button>
-          )}
-        </div>
+        <Time24Picker value={time} onChange={onTimeChange} />
       </div>
+    </div>
+  );
+}
+
+function Time24Picker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [hh, mm] = value && /^\d{2}:\d{2}$/.test(value) ? value.split(":") : ["", ""];
+  const selectCls =
+    "h-9 rounded-md border border-input bg-background px-2 text-sm shadow-sm tabular-nums";
+
+  function setHour(h: string) {
+    if (!h) return onChange("");
+    onChange(`${h}:${mm || "00"}`);
+  }
+  function setMinute(m: string) {
+    onChange(`${hh || "00"}:${m}`);
+  }
+
+  return (
+    <div className="flex items-center gap-1">
+      <select className={selectCls} value={hh} onChange={(e) => setHour(e.target.value)}>
+        <option value="">--</option>
+        {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map((h) => (
+          <option key={h} value={h}>{h}</option>
+        ))}
+      </select>
+      <span className="font-semibold">:</span>
+      <select
+        className={selectCls}
+        value={mm}
+        onChange={(e) => setMinute(e.target.value)}
+        disabled={!hh}
+      >
+        <option value="">--</option>
+        {Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0")).map((m) => (
+          <option key={m} value={m}>{m}</option>
+        ))}
+      </select>
+      <span className="text-xs text-slate-500 ml-1">(24h)</span>
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          className="shrink-0 text-xs px-2 h-9 rounded-md border hover:bg-slate-50"
+          title="Xoá giờ, quay lại Sáng/Chiều"
+        >
+          Xoá
+        </button>
+      )}
     </div>
   );
 }
