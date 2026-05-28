@@ -41,17 +41,11 @@ export function HandoverForm({
   const [recordDate, setRecordDate] = useState(initial?.recordDate ?? today);
 
   const [receivedDate, setReceivedDate] = useState(initial?.receivedDate ?? today);
-  const [receivedMode, setReceivedMode] = useState<"session" | "time">(
-    initial?.receivedTime ? "time" : "session"
-  );
-  const [receivedSession, setReceivedSession] = useState<Session>(initial?.receivedSession ?? "MORNING");
+  const [receivedSession, setReceivedSession] = useState<Session>(initial?.receivedSession || "MORNING");
   const [receivedTime, setReceivedTime] = useState(initial?.receivedTime ?? "");
 
   const [handedOverDate, setHandedOverDate] = useState(initial?.handedOverDate ?? today);
-  const [handedOverMode, setHandedOverMode] = useState<"session" | "time">(
-    initial?.handedOverTime ? "time" : "session"
-  );
-  const [handedOverSession, setHandedOverSession] = useState<Session>(initial?.handedOverSession ?? "AFTERNOON");
+  const [handedOverSession, setHandedOverSession] = useState<Session>(initial?.handedOverSession || "AFTERNOON");
   const [handedOverTime, setHandedOverTime] = useState(initial?.handedOverTime ?? "");
 
   const [note, setNote] = useState(initial?.note ?? "");
@@ -84,11 +78,12 @@ export function HandoverForm({
         category,
         recordDate,
         receivedDate,
-        receivedTime: receivedMode === "time" ? receivedTime : null,
-        receivedSession: receivedMode === "session" ? receivedSession : "",
+        // Nếu có giờ cụ thể → dùng giờ (session bỏ trống); nếu không → dùng buổi
+        receivedTime: receivedTime || null,
+        receivedSession: receivedTime ? "" : receivedSession,
         handedOverDate,
-        handedOverTime: handedOverMode === "time" ? handedOverTime : null,
-        handedOverSession: handedOverMode === "session" ? handedOverSession : "",
+        handedOverTime: handedOverTime || null,
+        handedOverSession: handedOverTime ? "" : handedOverSession,
         note,
         items,
       });
@@ -97,6 +92,8 @@ export function HandoverForm({
         if (!initial) {
           setItems([{ docTypeId: "", quantity: 1 }]);
           setNote("");
+          setReceivedTime("");
+          setHandedOverTime("");
         }
         onSaved?.();
       } else {
@@ -174,8 +171,6 @@ export function HandoverForm({
         <TimeSection
           date={receivedDate}
           onDateChange={setReceivedDate}
-          mode={receivedMode}
-          onModeChange={setReceivedMode}
           session={receivedSession}
           onSessionChange={setReceivedSession}
           time={receivedTime}
@@ -187,8 +182,6 @@ export function HandoverForm({
         <TimeSection
           date={handedOverDate}
           onDateChange={setHandedOverDate}
-          mode={handedOverMode}
-          onModeChange={setHandedOverMode}
           session={handedOverSession}
           onSessionChange={setHandedOverSession}
           time={handedOverTime}
@@ -213,8 +206,6 @@ export function HandoverForm({
 function TimeSection({
   date,
   onDateChange,
-  mode,
-  onModeChange,
   session,
   onSessionChange,
   time,
@@ -222,13 +213,12 @@ function TimeSection({
 }: {
   date: string;
   onDateChange: (v: string) => void;
-  mode: "session" | "time";
-  onModeChange: (m: "session" | "time") => void;
   session: Session;
   onSessionChange: (s: Session) => void;
   time: string;
   onTimeChange: (v: string) => void;
 }) {
+  const usingTime = !!time;
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       <Field label="Ngày">
@@ -239,36 +229,43 @@ function TimeSection({
         <div className="inline-flex rounded-md border bg-white shadow-sm overflow-hidden text-sm">
           <button
             type="button"
-            onClick={() => { onModeChange("session"); onSessionChange("MORNING"); }}
-            className={modeBtn(mode === "session" && session === "MORNING")}
+            onClick={() => onSessionChange("MORNING")}
+            className={modeBtn(!usingTime && session === "MORNING")}
           >
             Sáng
           </button>
           <button
             type="button"
-            onClick={() => { onModeChange("session"); onSessionChange("AFTERNOON"); }}
-            className={modeBtn(mode === "session" && session === "AFTERNOON")}
+            onClick={() => onSessionChange("AFTERNOON")}
+            className={modeBtn(!usingTime && session === "AFTERNOON")}
           >
             Chiều
           </button>
-          <button
-            type="button"
-            onClick={() => onModeChange("time")}
-            className={modeBtn(mode === "time")}
-          >
-            Giờ cụ thể
-          </button>
+        </div>
+        {usingTime && (
+          <p className="text-[11px] text-amber-600">Đang dùng giờ cụ thể — buổi sẽ bị bỏ qua.</p>
+        )}
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-sm font-bold text-slate-900">Giờ cụ thể (nếu có)</Label>
+        <div className="flex gap-1">
+          <Input
+            type="time"
+            value={time}
+            onChange={(e) => onTimeChange(e.target.value)}
+          />
+          {usingTime && (
+            <button
+              type="button"
+              onClick={() => onTimeChange("")}
+              className="shrink-0 text-xs px-2 rounded-md border hover:bg-slate-50"
+              title="Xoá giờ, quay lại Sáng/Chiều"
+            >
+              Xoá
+            </button>
+          )}
         </div>
       </div>
-      <Field label="Giờ (tuỳ chọn)">
-        <Input
-          type="time"
-          value={time}
-          disabled={mode !== "time"}
-          onChange={(e) => onTimeChange(e.target.value)}
-          placeholder="HH:MM"
-        />
-      </Field>
     </div>
   );
 }
